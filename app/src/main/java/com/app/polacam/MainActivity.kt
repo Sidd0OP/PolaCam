@@ -5,10 +5,21 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowColumn
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,8 +33,10 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.app.polacam.ui.theme.PolaCamTheme
 
 class MainActivity : ComponentActivity() {
@@ -32,7 +45,7 @@ class MainActivity : ComponentActivity() {
 
     var count :Int = 5;
 
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -40,42 +53,53 @@ class MainActivity : ComponentActivity() {
             PolaCamTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    topBar = {
-                        TopAppBar(
 
-                            title = {
-                                Text("Small Top App Bar")
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                titleContentColor = MaterialTheme.colorScheme.primary,
-                            )
-                        )
-                    },
-//                    bottomBar = {
-//                        BottomAppBar(
-//                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-//                            contentColor = MaterialTheme.colorScheme.tertiary,
-//                        )
-//                    }
 
                 ) { innerPadding ->
 
                     Box(
                         modifier =  Modifier
-                                   .padding(innerPadding)
+                                   .padding(horizontal = 0.dp, vertical = 0.dp)
                                    .fillMaxSize()
-                                   .background(color = MaterialTheme.colorScheme.background),
+                                   .background(color = Color.White),
 
                         contentAlignment = Alignment.Center
 
 
+
                     ){
-                        Greeting(
-                            name = "Android",
-                            modifier = Modifier.padding(innerPadding)
-                        );
-                        Back()
+//                        ImageContainer()
+//                        Back()
+
+                        FlowColumn (
+                            Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.Center,
+                        ){
+                            val itemModifier = Modifier.clip(RoundedCornerShape(8.dp))
+
+                            Box(
+                                modifier = itemModifier
+                                    .fillMaxHeight(0.2f)
+                                    .fillMaxWidth()
+                                    .background(Color.Red)
+                            )
+                            Box(
+                                modifier = itemModifier
+                                    .fillMaxHeight(0.6f)
+                                    .fillMaxWidth()
+                                    .background(Color.Blue)
+                            )
+                            Box(
+                                modifier = itemModifier
+                                    .fillMaxHeight(0.2f)
+                                    .fillMaxWidth()
+                                    .background(Color.Magenta)
+                            )
+
+                        }
+
+
                     }
 
 
@@ -111,15 +135,24 @@ fun Back()
 
 
         onClick = { increment(MainActivity()) },
-        modifier =  Modifier
-                    .fillMaxSize()
-                    .background(color = Color.Red),
+        modifier = Modifier
+            .width(10.dp)
+            .padding(0.dp , 2.dp)
+            .background(color = Color.Red),
 
 
     ) { }
 }
 
+@Preview
+@Composable
+fun ImageContainer()
+{
+    Canvas(modifier = Modifier.width(100.dp) , onDraw = {
+        drawCircle(color = Color.Red)
+    })
 
+}
 
 
 @Preview(showBackground = true)
