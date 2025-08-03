@@ -1,19 +1,12 @@
 package com.app.polacam
 
-import Permission
+import CamOperator
 import android.Manifest
-import android.graphics.drawable.shapes.Shape
+import android.net.Uri
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.CameraXThreads.TAG
-import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
@@ -22,42 +15,57 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowColumn
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.app.polacam.ui.theme.PolaCamTheme
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 
 class MainActivity : ComponentActivity() {
 
-
-
-    var count :Int = 5;
     val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+//
+//    val imageCapture : ImageCapture = ImageCapture
+//        .Builder()
+//        .build();
 
+    val executor: ExecutorService = Executors.newSingleThreadExecutor()
+
+
+    private lateinit var cameraController: LifecycleCameraController;
+    private val camOperator = CamOperator(this)
+
+
+    private fun requestPermissions() {
+
+        camOperator
+            .activityResultLauncher
+            .launch(REQUIRED_PERMISSIONS)
+
+    }
 
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -69,31 +77,40 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PolaCamTheme {
+
+
+                val context = LocalContext.current
+                val lifecycleOwner = LocalLifecycleOwner.current
+                val controller = remember {
+                    LifecycleCameraController(context).apply {
+                        bindToLifecycle(lifecycleOwner)
+                    }
+                }
+
+                this.cameraController = controller;
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
 
 
-                ) { innerPadding ->
+                    ) { innerPadding ->
 
                     Box(
-                        modifier =  Modifier
-                                   .padding(horizontal = 0.dp, vertical = 0.dp)
-                                   .fillMaxSize()
-                                   .background(color = Color.White),
+                        modifier = Modifier
+                            .padding(horizontal = 0.dp, vertical = 0.dp)
+                            .fillMaxSize()
+                            .background(color = Color.White),
 
                         contentAlignment = Alignment.Center
 
 
+                    ) {
 
-                    ){
-//                        ImageContainer()
-//                        Back()
-
-                        FlowColumn (
+                        FlowColumn(
                             Modifier.fillMaxSize(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.Center,
-                        ){
+                        ) {
                             val itemModifier = Modifier.clip(RoundedCornerShape(8.dp))
 
                             Box(
@@ -103,7 +120,7 @@ class MainActivity : ComponentActivity() {
                                     .background(Color.Red),
 
                                 contentAlignment = Alignment.Center
-                            ){}
+                            ) {}
 
 
                             Box(
@@ -112,22 +129,63 @@ class MainActivity : ComponentActivity() {
                                     .fillMaxWidth(),
 
                                 contentAlignment = Alignment.Center
-
-
-
-                            ){
+                            ) {
 
                                 ImageContainer()
-                                cameraPreview()
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize(0.5f),
+
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    cameraPreview(cameraController)
+                                }
+
+
                             }
 
 
                             Box(
                                 modifier = itemModifier
                                     .fillMaxHeight(0.2f)
-                                    .fillMaxWidth()
-                                    .background(Color.Magenta)
-                            ){
+                                    .fillMaxWidth(),
+
+                                contentAlignment = Alignment.TopCenter
+                            ) {
+
+
+                                val capturedImageUri = remember { mutableStateOf<Uri?>(null) }
+
+                                Button(
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(CircleShape),
+
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.Red
+                                    ),
+
+
+                                    onClick = {
+
+                                        camOperator.takePhoto(
+                                            cameraController,
+                                            executor,
+                                            context,
+                                            { uri ->
+
+                                                capturedImageUri.value = uri
+
+                                            }
+
+                                        )
+
+                                        println("Button click")
+                                    }
+
+                                ) { }
+
 
                             }
 
@@ -143,26 +201,19 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun cameraPreview()
-    {
-        val context = LocalContext.current
-        val lifecycleOwner = LocalLifecycleOwner.current
+    fun cameraPreview(cameraController: LifecycleCameraController) {
 
-        val cameraController = remember {
-            LifecycleCameraController(context).apply {
-                bindToLifecycle(lifecycleOwner)
-            }
-        }
 
         AndroidView(
             modifier = Modifier
+                .aspectRatio(1f)
                 .clip(CircleShape)
-                .fillMaxSize(),
+                .fillMaxWidth(),
 
             factory = { ctx ->
                 PreviewView(ctx).apply {
-                    scaleType = PreviewView.ScaleType.FIT_CENTER
-                    implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                    scaleType = PreviewView.ScaleType.FILL_CENTER
+                    implementationMode = PreviewView.ImplementationMode.PERFORMANCE
                     controller = cameraController
                 }
             },
@@ -176,80 +227,27 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
-
-
-
-    private fun requestPermissions() {
-
-        Permission(this).
-        activityResultLauncher.
-        launch(REQUIRED_PERMISSIONS)
-
-    }
-
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-
-
-@Composable
-fun Back()
-{
-    Button(
-
-
-        onClick = {  },
-        modifier = Modifier
-            .width(10.dp)
-            .padding(0.dp , 2.dp)
-            .background(color = Color.Red),
-
-
-    ) { }
 }
 
 @Preview
 @Composable
-fun ImageContainer()
-{
+fun ImageContainer(
+
+    shadowColor: Color = Color.Black,
+) {
     Canvas(
         modifier = Modifier
-            .background(Color.Green)
-            .fillMaxSize() ,
+            .fillMaxSize(),
+
         onDraw = {
-                    drawCircle(
-                        color = Color.Yellow,
-                        radius = size.minDimension / 2.5f
-                        )
-                }
+            drawCircle(
+                color = Color.Yellow,
+                radius = size.minDimension / 2.5f
+            )
+        }
 
     )
 
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    PolaCamTheme {
-        Greeting("Android")
-    }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun ButtonPreview(){
-
-    PolaCamTheme {
-        Back()
-    }
-}
