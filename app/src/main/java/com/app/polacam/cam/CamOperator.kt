@@ -2,7 +2,6 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
-import android.os.Build
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -11,7 +10,6 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.CameraController
-import androidx.media3.common.util.Log
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.concurrent.ExecutorService
@@ -53,7 +51,7 @@ class CamOperator(
     ) {
 
 
-        val outPutFile = File(context.filesDir, "image.jpg").apply { parentFile?.mkdirs() }
+
 
         fun photoFileName(): String {
             return SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS")
@@ -75,31 +73,31 @@ class CamOperator(
             contentValues
         ).build()
 
-        cameraController.takePicture(
-            executor,
-            object :
-                ImageCapture.OnImageCapturedCallback() {
-
-                override fun onCaptureStarted() {
-                    println("Capture Started")
-
-                }
-
-
-                override fun onCaptureSuccess(image: ImageProxy) {
-
-                    println("Image captured ${image.format}")
-
-                }
-
-                override fun onError(exception: ImageCaptureException) {
-                    super.onError(exception)
-                }
-
-            }
-
-
-        )
+//        cameraController.takePicture(
+//            executor,
+//            object :
+//                ImageCapture.OnImageCapturedCallback() {
+//
+//                override fun onCaptureStarted() {
+//                    println("Capture Started")
+//
+//                }
+//
+//
+//                override fun onCaptureSuccess(image: ImageProxy) {
+//
+//                    println("Image captured ${image.format}")
+//
+//                }
+//
+//                override fun onError(exception: ImageCaptureException) {
+//                    super.onError(exception)
+//                }
+//
+//            }
+//
+//
+//        )
 
         cameraController.takePicture(
 
@@ -108,15 +106,17 @@ class CamOperator(
             executor,
             object : ImageCapture.OnImageSavedCallback {
 
-                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
 
-                    Uri.fromFile(outPutFile).let(onImageCaptured)
+                    println("Saved image to ${output.savedUri}")
+//                    val msg = "Photo capture succeeded: ${output.savedUri}"
+//                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
 
                 }
 
                 override fun onError(exception: ImageCaptureException) {
 
-                    println(exception.message)
+                    println("Failed to save image")
 
                 }
             }
