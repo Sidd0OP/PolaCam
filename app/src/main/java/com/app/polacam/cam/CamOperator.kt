@@ -1,23 +1,23 @@
 import android.Manifest
-import android.content.ContentValues
 import android.content.Context
-import android.net.Uri
-import android.provider.MediaStore
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.CameraController
-import java.io.File
-import java.text.SimpleDateFormat
+import com.app.polacam.processing.ImageProcessor
+import org.opencv.core.Mat
 import java.util.concurrent.ExecutorService
 
 
 class CamOperator(
     activity: ComponentActivity
 ) {
+
+    private val imagePocessor = ImageProcessor()
 
     val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
 
@@ -44,86 +44,38 @@ class CamOperator(
 
 
     fun takePhoto(
-        cameraController: CameraController,
-        executor: ExecutorService,
         context: Context,
-        onImageCaptured: (Uri) -> Unit
+        cameraController: CameraController,
+        mat: Mat,
+        executor: ExecutorService,
+        captureSuccess: (Boolean) -> Unit
     ) {
 
 
-
-
-        fun photoFileName(): String {
-            return SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS")
-                .format(System.currentTimeMillis()) + ".jpg"
-        }
-
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, photoFileName())
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-
-            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures")
-
-        }
-
-
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(
-            context.contentResolver,
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            contentValues
-        ).build()
-
-//        cameraController.takePicture(
-//            executor,
-//            object :
-//                ImageCapture.OnImageCapturedCallback() {
-//
-//                override fun onCaptureStarted() {
-//                    println("Capture Started")
-//
-//                }
-//
-//
-//                override fun onCaptureSuccess(image: ImageProxy) {
-//
-//                    println("Image captured ${image.format}")
-//
-//                }
-//
-//                override fun onError(exception: ImageCaptureException) {
-//                    super.onError(exception)
-//                }
-//
-//            }
-//
-//
-//        )
-
         cameraController.takePicture(
-
-
-            outputOptions,
             executor,
-            object : ImageCapture.OnImageSavedCallback {
-
-                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-
-                    println("Saved image to ${output.savedUri}")
-//                    val msg = "Photo capture succeeded: ${output.savedUri}"
-//                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            object : ImageCapture.OnImageCapturedCallback()
+            {
+                override fun onCaptureStarted() {
 
                 }
 
-                override fun onError(exception: ImageCaptureException) {
+                override fun onCaptureSuccess(image: ImageProxy)
+                {
+                    imagePocessor.processImage(
+                        context,
+                        image,
+                        mat,
+                        { saved, filePath -> captureSuccess(saved) }
+                    )
 
-                    println("Failed to save image")
+                    image.close()
 
                 }
+
+
             }
-
-
         )
-
 
     }
 }

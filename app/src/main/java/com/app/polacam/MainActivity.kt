@@ -4,9 +4,15 @@ import CamOperator
 import android.Manifest
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.camera.core.CameraXThreads.TAG
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageProxy
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
@@ -39,24 +45,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.media3.common.util.Log
+import com.app.polacam.processing.ImageProcessor
 import com.app.polacam.ui.theme.PolaCamTheme
+import org.opencv.android.OpenCVLoader
+import org.opencv.core.Mat
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 
 class MainActivity : ComponentActivity() {
 
+
+
     val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
-//
-//    val imageCapture : ImageCapture = ImageCapture
-//        .Builder()
-//        .build();
-
     val executor: ExecutorService = Executors.newSingleThreadExecutor()
-
-
     private lateinit var cameraController: LifecycleCameraController;
+
     private val camOperator = CamOperator(this)
+
+
+
 
 
     private fun requestPermissions() {
@@ -72,8 +81,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         requestPermissions()
+
+        if (OpenCVLoader.initLocal())
+        {
+
+        }else{
+            return
+        }
+
+        var mat = Mat();
+
+
+
 
         setContent {
             PolaCamTheme {
@@ -170,18 +190,18 @@ class MainActivity : ComponentActivity() {
                                     onClick = {
 
                                         camOperator.takePhoto(
+                                            baseContext,
                                             cameraController,
+                                            mat,
                                             executor,
-                                            context,
-                                            { uri ->
-
-                                                capturedImageUri.value = uri
+                                            {
+                                                success -> println("Image status $success")
 
                                             }
 
+
                                         )
 
-                                        println("Button click")
                                     }
 
                                 ) { }
