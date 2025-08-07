@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 
 val shadow = Color.Black
+val innerShadow = Color.White
 val background = Color.White
 val button = Color.Red
 

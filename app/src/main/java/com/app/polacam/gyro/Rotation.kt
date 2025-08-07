@@ -51,7 +51,21 @@ class Rotation(
                         SensorManager.getRotationMatrixFromVector(rotationMatrix , event.values)
                         SensorManager.getOrientation( rotationMatrix, orientationAngles)
 
-                        rotationValues(rotationMatrix[0], rotationMatrix[1], rotationMatrix[2])
+                        val azimuthInDegrees = orientationAngles[0]
+                        val pitchInDegrees = orientationAngles[1]
+                        val rollInDegrees = orientationAngles[2]
+
+                        // Adjust azimuth to be 0-360 degrees if desired (optional)
+                        // val adjustedAzimuthInDegrees = (azimuthInDegrees + 360) % 360
+
+                        // 4. Pass the angles in DEGREES to your callback
+                        // Assuming your rotationValues callback expects x, y, z as azimuth, pitch, roll
+                        rotationValues(
+                            rollInDegrees,  // Typically what people refer to as 'X' or heading
+                            pitchInDegrees,
+                            azimuthInDegrees// Typically 'Y'
+                                  // Typically 'Z'
+                        )
                     }
                 }
 

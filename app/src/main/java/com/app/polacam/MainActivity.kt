@@ -2,6 +2,9 @@ package com.app.polacam
 
 import CamOperator
 import android.Manifest
+import android.graphics.BlurMaskFilter
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -45,13 +48,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.util.Log
@@ -65,6 +73,8 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import androidx.core.graphics.toColorInt
 import com.app.polacam.gyro.Rotation
+import com.app.polacam.ui.theme.innerShadow
+import kotlin.math.asin
 
 
 class MainActivity : ComponentActivity() {
@@ -89,6 +99,74 @@ class MainActivity : ComponentActivity() {
             .activityResultLauncher
             .launch(REQUIRED_PERMISSIONS)
 
+    }
+
+    fun Modifier.innerShadow(
+        color: Color = Color.Black,
+        cornersRadius: Dp = 0.dp,
+        spread: Dp = 0.dp,
+        blur: Dp = 0.dp,
+        offsetY: Dp = 0.dp,
+        offsetX: Dp = 0.dp
+    ) = this.drawWithContent {
+
+        drawContent()
+
+        val rect = Rect(Offset.Zero, size)
+        val paint = Paint()
+
+        drawIntoCanvas {
+
+            paint.color = color
+            paint.isAntiAlias = true
+            it.saveLayer(rect, paint)
+            it.drawRoundRect(
+                left = rect.left,
+                top = rect.top,
+                right = rect.right,
+                bottom = rect.bottom,
+                cornersRadius.toPx(),
+                cornersRadius.toPx(),
+                paint
+            )
+            val frameworkPaint = paint.asFrameworkPaint()
+            frameworkPaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+            if (blur.toPx() > 0) {
+                frameworkPaint.maskFilter = BlurMaskFilter(blur.toPx(), BlurMaskFilter.Blur.NORMAL)
+            }
+            val left = if (offsetX > 0.dp) {
+                rect.left + offsetX.toPx()
+            } else {
+                rect.left
+            }
+            val top = if (offsetY > 0.dp) {
+                rect.top + offsetY.toPx()
+            } else {
+                rect.top
+            }
+            val right = if (offsetX < 0.dp) {
+                rect.right + offsetX.toPx()
+            } else {
+                rect.right
+            }
+            val bottom = if (offsetY < 0.dp) {
+                rect.bottom + offsetY.toPx()
+            } else {
+                rect.bottom
+            }
+            paint.color = Color.Black
+            it.drawRoundRect(
+                left = left + spread.toPx() / 2,
+                top = top + spread.toPx() / 2,
+                right = right - spread.toPx() / 2,
+                bottom = bottom - spread.toPx() / 2,
+                cornersRadius.toPx(),
+                cornersRadius.toPx(),
+                paint
+            )
+            frameworkPaint.xfermode = null
+            frameworkPaint.maskFilter = null
+        }
     }
 
     fun Modifier.drawColoredShadow(
@@ -161,17 +239,22 @@ class MainActivity : ComponentActivity() {
 
                 var xRot by remember { mutableStateOf(0.0f) }
                 var yRot by remember { mutableStateOf(0.0f) }
+                var zRot by remember { mutableStateOf(0.0f) }
+
+                val dragFactor = 5.0f
 
                 LaunchedEffect(Unit) {
                     rotationProvider.getRotation { x, y, z ->
-                        println("X is $x and Y is $y z is $z")
-                        val scaleFactor = 20f
-                        xRot = y * scaleFactor * -1
-                        yRot = x * scaleFactor * -1
+//                        println("X is $x and Y is $y z is $z")
+
+                        xRot = (x) * dragFactor
+                        yRot = -1 * (y) * dragFactor
+                        zRot = (z) * dragFactor
+
                     }
                 }
 
-                // DisposableEffect to unregister the listener when the composable leaves the screen
+
                 DisposableEffect(Unit) {
                     onDispose {
                         rotationProvider.onPause()
@@ -209,7 +292,17 @@ class MainActivity : ComponentActivity() {
                                     .background(background),
 
                                 contentAlignment = Alignment.Center
-                            ) {}
+                            ) {
+
+                                Text(
+                                    text = "X roation is ${xRot.toInt()}: Y rotation is ${yRot.toInt()}: : Z rotation is ${zRot.toInt()}",
+                                    color = Color.Black,
+                                    fontSize = 9.sp
+
+
+
+                                )
+                            }
 
 
                             Box(
@@ -249,7 +342,8 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier
                                         .size(90.dp)
                                         .padding(0.dp,0.dp)
-                                        .drawColoredShadow(shadow,0.2f,offsetX = xRot.dp,offsetY = yRot.dp,borderRadius = 200.dp,shadowRadius = 10.dp)
+                                        .drawColoredShadow(shadow,0.3f,offsetX = xRot.dp,offsetY = yRot.dp,borderRadius = 200.dp,shadowRadius = 15.dp)
+                                        .innerShadow(innerShadow, cornersRadius = 200.dp, offsetX = xRot.dp,offsetY = yRot.dp ,spread =  0.5.dp , blur = 10.dp)
                                         .clip(CircleShape),
 
                                     colors = ButtonDefaults.buttonColors(
@@ -277,11 +371,7 @@ class MainActivity : ComponentActivity() {
                                 ) {
 
 
-                                    Text(
-                                        text = "X roation is ${xRot}",
-                                        color = Color.White
 
-                                    )
 
                                 }
 
