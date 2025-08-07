@@ -8,12 +8,16 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.camera.core.ImageProxy
+import androidx.compose.ui.graphics.vector.VectorProperty
 import org.opencv.android.Utils
 import org.opencv.core.Mat
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import java.text.SimpleDateFormat
 import androidx.core.graphics.createBitmap
+import org.opencv.core.Core
+import org.opencv.core.Core.ROTATE_90_CLOCKWISE
+import org.opencv.core.Core.ROTATE_90_COUNTERCLOCKWISE
 
 class ImageProcessor {
 
@@ -35,7 +39,9 @@ class ImageProcessor {
     {
         loadImage(image, mat)
 
-        Imgproc.blur(mat,mat, Size(55.0, 55.0))
+
+        Core.rotate(mat , mat, ROTATE_90_CLOCKWISE)
+        Imgproc.blur(mat,mat, Size(5.0, 5.0))
 
 
         saveImage(

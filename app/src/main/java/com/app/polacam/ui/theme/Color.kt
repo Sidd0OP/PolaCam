@@ -2,6 +2,13 @@ package com.app.polacam.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+
+val shadow = Color.Black
+val background = Color.White
+val button = Color.Red
+
+
+
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
 val Pink80 = Color(0xFFEFB8C8)
