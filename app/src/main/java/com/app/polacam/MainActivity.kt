@@ -5,17 +5,14 @@ import android.Manifest
 import android.graphics.BlurMaskFilter
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
-import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.camera.core.CameraXThreads.TAG
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageProxy
+import androidx.compose.foundation.Image
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
@@ -30,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -49,13 +47,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -80,17 +82,12 @@ import kotlin.math.asin
 class MainActivity : ComponentActivity() {
 
 
-
     val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
     val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private lateinit var cameraController: LifecycleCameraController;
 
     private val camOperator = CamOperator(this)
     private lateinit var rotationProvider: Rotation
-
-
-
-
 
 
     private fun requestPermissions() {
@@ -208,20 +205,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         requestPermissions()
 
-        if (OpenCVLoader.initLocal())
-        {
+        if (OpenCVLoader.initLocal()) {
 
-        }else{
+        } else {
             return
         }
 
         var mat = Mat();
 
         rotationProvider = Rotation(this)
-
-
-
-
 
         setContent {
             PolaCamTheme {
@@ -245,7 +237,6 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(Unit) {
                     rotationProvider.getRotation { x, y, z ->
-//                        println("X is $x and Y is $y z is $z")
 
                         xRot = (x) * dragFactor
                         yRot = -1 * (y) * dragFactor
@@ -291,17 +282,27 @@ class MainActivity : ComponentActivity() {
                                     .fillMaxWidth()
                                     .background(background),
 
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.BottomCenter
                             ) {
 
-                                Text(
-                                    text = "X roation is ${xRot.toInt()}: Y rotation is ${yRot.toInt()}: : Z rotation is ${zRot.toInt()}",
-                                    color = Color.Black,
-                                    fontSize = 9.sp
-
-
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.6f)
+                                        .fillMaxHeight(0.5f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(Color.Black),
+                                    contentAlignment = Alignment.Center
 
                                 )
+                                {
+                                    Text(
+                                        text = "X roation is ${xRot.toInt()}: Y rotation is ${yRot.toInt()}: : Z rotation is ${zRot.toInt()}",
+                                        color = Color.Black,
+                                        fontSize = 9.sp
+                                    )
+                                }
+
+
                             }
 
 
@@ -313,7 +314,24 @@ class MainActivity : ComponentActivity() {
                                 contentAlignment = Alignment.Center
                             ) {
 
-                                ImageContainer()
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    contentAlignment = Alignment.CenterStart
+                                )
+                                {
+                                    Image(
+                                        painter = painterResource(R.drawable.camera_lines),
+                                        contentDescription = "SVG Image",
+                                        modifier = Modifier
+                                            .rotate(90f)
+                                            .width(100.dp)
+                                            .fillMaxHeight(),
+                                        contentScale = ContentScale.FillBounds
+                                    )
+                                }
+
+                                ImageContainer(xRot,yRot)
 
                                 Box(
                                     modifier = Modifier
@@ -337,13 +355,26 @@ class MainActivity : ComponentActivity() {
                             ) {
 
 
-
                                 Button(
                                     modifier = Modifier
                                         .size(90.dp)
-                                        .padding(0.dp,0.dp)
-                                        .drawColoredShadow(shadow,0.3f,offsetX = xRot.dp,offsetY = yRot.dp,borderRadius = 200.dp,shadowRadius = 15.dp)
-                                        .innerShadow(innerShadow, cornersRadius = 200.dp, offsetX = xRot.dp,offsetY = yRot.dp ,spread =  0.5.dp , blur = 10.dp)
+                                        .padding(0.dp, 0.dp)
+                                        .drawColoredShadow(
+                                            shadow,
+                                            0.4f,
+                                            offsetX = xRot.dp,
+                                            offsetY = yRot.dp,
+                                            borderRadius = 200.dp,
+                                            shadowRadius = 15.dp
+                                        )
+                                        .innerShadow(
+                                            innerShadow,
+                                            cornersRadius = 200.dp,
+                                            offsetX = xRot.dp,
+                                            offsetY = yRot.dp,
+                                            spread = 0.5.dp,
+                                            blur = 10.dp
+                                        )
                                         .clip(CircleShape),
 
                                     colors = ButtonDefaults.buttonColors(
@@ -358,8 +389,8 @@ class MainActivity : ComponentActivity() {
                                             cameraController,
                                             mat,
                                             executor,
-                                            {
-                                                success -> println("Image status $success")
+                                            { success ->
+                                                println("Image status $success")
 
                                             }
 
@@ -369,8 +400,6 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                 ) {
-
-
 
 
                                 }
@@ -390,8 +419,6 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
-
     override fun onPause() {
         super.onPause()
         rotationProvider.onPause()
@@ -399,54 +426,116 @@ class MainActivity : ComponentActivity() {
     }
 
 
-}
+    @Composable
+    fun cameraPreview(cameraController: LifecycleCameraController) {
 
 
-@Composable
-fun cameraPreview(cameraController: LifecycleCameraController) {
+        AndroidView(
+            modifier = Modifier
+                .aspectRatio(1f)
+                .innerShadow(
+                    shadow,
+                    cornersRadius = 200.dp,
+                    offsetX = 0.dp,
+                    offsetY = 0.dp,
+                    spread = 4.dp,
+                    blur = 20.dp
+                )
+                .clip(CircleShape)
+                .fillMaxWidth(),
 
+            factory = { ctx ->
+                PreviewView(ctx).apply {
+                    scaleType = PreviewView.ScaleType.FILL_CENTER
+                    implementationMode = PreviewView.ImplementationMode.PERFORMANCE
+                    controller = cameraController
+                }
+            },
 
-    AndroidView(
-        modifier = Modifier
-            .aspectRatio(1f)
-            .clip(CircleShape)
-            .fillMaxWidth(),
-
-        factory = { ctx ->
-            PreviewView(ctx).apply {
-                scaleType = PreviewView.ScaleType.FILL_CENTER
-                implementationMode = PreviewView.ImplementationMode.PERFORMANCE
-                controller = cameraController
+            onRelease = {
+                cameraController.unbind()
             }
-        },
 
-        onRelease = {
-            cameraController.unbind()
+        )
+
+    }
+
+    @Preview
+    @Composable
+    fun ImageContainer(
+
+        xRotation: Float = 0.0f,
+        yRotation: Float = 0.0f,
+
+        ) {
+
+        //outer box static
+        //image with dials to be fixed
+
+        Box(
+
+            modifier = Modifier
+                .drawColoredShadow(
+                    shadow,
+                    0.4f,
+                    offsetX = xRotation.dp,
+                    offsetY = yRotation.dp,
+                    borderRadius = 150.dp,
+                    shadowRadius =  20.dp
+                )
+                .innerShadow(
+                    innerShadow,
+                    cornersRadius = 200.dp,
+                    offsetX = xRotation.dp,
+                    offsetY = yRotation.dp,
+                    spread = 1.dp,
+                    blur = 15.dp
+                )
+                .clip(CircleShape)
+                .size(300.dp)
+                .background(Color.Red),
+
+            contentAlignment = Alignment.Center
+
+        ){
+
+            Box(
+
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size(250.dp)
+                    .background(Color.Black),
+
+                contentAlignment = Alignment.Center
+
+
+            ){
+
+
+            }
+
         }
 
-    )
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }
 
-@Preview
-@Composable
-fun ImageContainer(
 
-    shadowColor: Color = Color.Black,
-) {
-    Canvas(
-        modifier = Modifier
-            .fillMaxSize(),
 
-        onDraw = {
-            drawCircle(
-                color = Color.Yellow,
-                radius = size.minDimension / 2.5f
-            )
-        }
 
-    )
 
-}
 
 
