@@ -5,6 +5,7 @@ import android.Manifest
 import android.graphics.BlurMaskFilter
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -53,9 +54,12 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -84,6 +88,10 @@ class MainActivity : ComponentActivity() {
 
     val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
     val executor: ExecutorService = Executors.newSingleThreadExecutor()
+
+
+    var mediaPlayer: MediaPlayer? = null;
+    
     private lateinit var cameraController: LifecycleCameraController;
 
     private val camOperator = CamOperator(this)
@@ -205,6 +213,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         requestPermissions()
 
+        mediaPlayer = MediaPlayer.create(this, R.raw.click_efect)
+
         if (OpenCVLoader.initLocal()) {
 
         } else {
@@ -214,6 +224,8 @@ class MainActivity : ComponentActivity() {
         var mat = Mat();
 
         rotationProvider = Rotation(this)
+
+
 
         setContent {
             PolaCamTheme {
@@ -282,13 +294,29 @@ class MainActivity : ComponentActivity() {
                                     .fillMaxWidth()
                                     .background(background),
 
-                                contentAlignment = Alignment.BottomCenter
+                                contentAlignment = Alignment.Center
                             ) {
 
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth(0.6f)
                                         .fillMaxHeight(0.5f)
+                                        .drawColoredShadow(
+                                            shadow,
+                                            0.6f,
+                                            offsetX = xRot.dp,
+                                            offsetY = yRot.dp,
+                                            borderRadius = 10.dp,
+                                            shadowRadius = 25.dp
+                                        )
+                                        .innerShadow(
+                                            innerShadow,
+                                            cornersRadius = 10.dp,
+                                            offsetX = xRot.dp,
+                                            offsetY = yRot.dp,
+                                            spread = 0.2.dp,
+                                            blur = 12.dp
+                                        )
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(Color.Black),
                                     contentAlignment = Alignment.Center
@@ -296,9 +324,10 @@ class MainActivity : ComponentActivity() {
                                 )
                                 {
                                     Text(
-                                        text = "X roation is ${xRot.toInt()}: Y rotation is ${yRot.toInt()}: : Z rotation is ${zRot.toInt()}",
-                                        color = Color.Black,
-                                        fontSize = 9.sp
+                                        text = "PolaCam",
+                                        color = Color.White,
+                                        fontSize = 32.sp,
+                                        fontFamily = androidx.compose.ui.text.font.FontFamily.Cursive,
                                     )
                                 }
 
@@ -354,6 +383,7 @@ class MainActivity : ComponentActivity() {
                                 contentAlignment = Alignment.Center
                             ) {
 
+                                val hapticFeedback = LocalHapticFeedback.current
 
                                 Button(
                                     modifier = Modifier
@@ -384,6 +414,8 @@ class MainActivity : ComponentActivity() {
 
                                     onClick = {
 
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+
                                         camOperator.takePhoto(
                                             baseContext,
                                             cameraController,
@@ -397,7 +429,10 @@ class MainActivity : ComponentActivity() {
 
                                         )
 
+                                        mediaPlayer?.start()
+
                                     }
+
 
                                 ) {
 
