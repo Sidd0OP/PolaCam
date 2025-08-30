@@ -1,7 +1,7 @@
 # PolaCam
 
 
-
+<img src = "https://raw.githubusercontent.com/Sidd0OP/PolaCam/refs/heads/master/images/Screenshot_20250830-152159.png" width = "450px" >
 
 An fun camera app designed like some old polaroid camera, which also creates effects to make it look like polaroid images (I wanted to learn Kotlin and jetpack compose so this was a small crazy idea for that 😉).
 
